@@ -1,22 +1,58 @@
 import pygame
-pygame.init()
+import random
+import homepage
+pygame.init() # initialises pygame modules which are imported
+pygame.font.init()
 
-win = pygame.display.set_mode((500, 400))
+screen = pygame.display.set_mode((1250, 680))
+scene = "menu"
+background_colour = (137, 207, 240)
 
 pygame.display.set_caption("Sorting Visualiser")
 
 x = 40
 y = 40
+TitleFont = pygame.font.SysFont("Optima", 50)
+Buttonfont = pygame.font.SysFont("Optima", 20)
 
 width = 20
+user_choice = ''
 
-height =  [200, 50, 130, 90, 250, 61, 110, 88, 33, 80, 70, 159, 180, 20]
+
 
 run = True
 
+def create_array(num):
+    height = []
+    if num < 5 or num > 40:
+        print("Invalid")
+        return
+    for i in range(num):
+        height.append(random.randint(100,680))
+    return height
+
+
 def show(height):
     for i in range(len(height)):
-        pygame.draw.rect(win, "red", (x + 30 * i, y, width, height[i]))
+        pygame.draw.rect(screen, "red", (x + 30 * i, y, width, height[i]))
+
+
+def sort_page(sort_type):
+     text = TitleFont.render(f"{sort_type.upper()} SORT", True, "black") 
+     textRect = text.get_rect()
+     textRect.center = (1100, 50)
+     screen.blit(text, textRect)
+     input_rect = pygame.Rect(1100, 100, 140, 32)
+     int_text1 = Buttonfont.render("Enter and integer between 5 and 40", True, "black")
+     int_text_rect1 = int_text1.get_rect()
+     int_text_rect1.center = (1100, 80)
+     screen.blit(int_text1, int_text_rect1)
+     int_text2 = Buttonfont.render("for the number of items you want to sort", True, "black")
+     int_text_rect2 = int_text2.get_rect()
+     int_text_rect2.center = (1100, 90)
+     screen.blit(int_text2, int_text_rect2)
+     pygame.draw.rect(screen, "white", input_rect)
+     return input_rect
 
 def bubble_sort(height):
     for i in range(len(height) - 1):
@@ -25,10 +61,11 @@ def bubble_sort(height):
                 temp = height[j]
                 height[j] = height[j + 1]
                 height[j + 1] = temp
-                win.fill((0,0,0))
+                screen.fill((137, 207, 240))
                 show(height)
                 pygame.time.delay(50)
                 pygame.display.update()
+    return height
 
 def insertion_sort(height):
     n = len(height)
@@ -39,10 +76,11 @@ def insertion_sort(height):
             height[j + 1] = height[j]
             j -= 1
         height[j + 1] = key
-        win.fill((0,0,0))
+        screen.fill((137, 207, 240))
         show(height)
         pygame.time.delay(50)
         pygame.display.update()
+    return height
 
 def merge_sort(height):
     if len(height) <= 1:
@@ -68,7 +106,7 @@ def merge(left, right):
         else:
             result. append(right[j])
             j += 1
-        win.fill((0,0,0))
+        screen.fill((137, 207, 240))
         show(result)
         pygame.time.delay(50)
         pygame.display.update()
@@ -80,7 +118,6 @@ def merge(left, right):
 
 
 
-     
 
 
 while run:
@@ -90,19 +127,55 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
-    
-    if keys[pygame.K_SPACE]:
-        execute = True
-    
 
-    if execute == False:
-        win.fill((0,0,0))
-        show(height)
-        pygame.display.update()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if scene == "menu":
+                if bubbleButton.collidepoint(event.pos):
+                    scene = "bubble"
+                elif insertionButton.collidepoint(event.pos):
+                    scene = "insertion"
+                elif mergeButton.collidepoint(event.pos):
+                    scene = "merge"
+            if scene == "bubble" or scene == "insertion" or scene == "merge":
+                if input_rect.collidepoint(event.pos):
+                    user_input = True
 
-    else:
-        height = merge_sort(height)
-        execute = False
+        if user_input and event.type == pygame.KEYDOWN:    
+            if user_input and event.type == pygame.K_BACKSPACE:
+                user_choice = user_choice[:-1]
+            else:
+                user_choice += event.unicode
+            
+            if event.type == pygame.K_RETURN:
+                height = create_array(int(user_choice))
+        
+
+
+    if scene == "menu":
+        bubbleButton, insertionButton, mergeButton = homepage.HomeScreen()
+    
+    if scene == "merge" or scene == "insertion" or scene == "bubble":
+        if keys[pygame.K_SPACE]:
+            execute = True        
+        if execute == False:
+            screen.fill((137, 207, 240))
+            input_rect = sort_page(scene)
+            
+            show(height)
+            
+
+        else:
+            if scene == "merge":
+                height = merge_sort(height)
+                execute = False
+            elif scene == "bubble":
+                height = bubble_sort(height)
+                execute = False
+            elif scene == "insertion":
+                height = insertion_sort(height)
+                execute = False
+
+    pygame.display.update()
 
 
 pygame.quit()

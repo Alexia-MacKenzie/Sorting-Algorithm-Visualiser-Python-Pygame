@@ -23,6 +23,7 @@ user_input = False
 height = [] 
 input_rect = pygame.Rect(1100, 100, 140, 32)
 invalidInput = False
+sorted_done = False
 
 
 
@@ -30,32 +31,42 @@ run = True
 
 def create_array(num):
     height = []
-    if num < 5 or num > 40:
-        print("Invalid")
-        return
     for i in range(num):
-        height.append(random.randint(100,680))
+        height.append(random.randint(100,600))
     return height
 
 
-def show(height):
+def show(height, sorted_done, sorted_index= None, reverse = False):
+    if sorted_index == None:
+        if reverse:
+            sorted_index = len(height)
+        else:
+            sorted_index = 0
+
     for i in range(len(height)):
-        pygame.draw.rect(screen, "red", (x + 30 * i, y, width, height[i]))
+        if sorted_done:
+            colour = "green"
+        else: 
+            if reverse:
+                colour = "green" if i >= sorted_index else "red"
+            else:
+                colour = "green" if i < sorted_index else "red"
+        pygame.draw.rect(screen, colour, (x + 30 * i, y + 40, width, height[i]))
 
 
 def sort_page(sort_type):
      text = TitleFont.render(f"{sort_type.upper()} SORT", True, "black") 
      textRect = text.get_rect()
-     textRect.center = (1100, 50)
+     textRect.center = (1100, 100)
      screen.blit(text, textRect)
-     input_rect = pygame.Rect(1100, 100, 140, 32)
+     input_rect = pygame.Rect(1100, 150, 140, 32)
      int_text1 = Buttonfont.render("Enter and integer between 5 and 30", True, "black")
      int_text_rect1 = int_text1.get_rect()
-     int_text_rect1.center = (1100, 80)
+     int_text_rect1.center = (1100, 130)
      screen.blit(int_text1, int_text_rect1)
      int_text2 = Buttonfont.render("for the number of items you want to sort", True, "black")
      int_text_rect2 = int_text2.get_rect()
-     int_text_rect2.center = (1100, 90)
+     int_text_rect2.center = (1100, 140)
      screen.blit(int_text2, int_text_rect2)
      pygame.draw.rect(screen, "white", input_rect)
      text_surface = Buttonfont.render(user_choice, True, "black")
@@ -69,14 +80,15 @@ def invalid_input():
     screen.blit(text, textRect)
 
 def bubble_sort(height):
-    for i in range(len(height) - 1):
+    n = len(height)
+    for i in range(n - 1):
         for j in range(len(height) - i - 1):
             if height[j] > height[j + 1]:
                 temp = height[j]
                 height[j] = height[j + 1]
                 height[j + 1] = temp
                 screen.fill((137, 207, 240))
-                show(height)
+                show(height, False, n-i, True)
                 pygame.time.delay(50)
                 pygame.display.update()
     return height
@@ -91,7 +103,7 @@ def insertion_sort(height):
             j -= 1
         height[j + 1] = key
         screen.fill((137, 207, 240))
-        show(height)
+        show(height, False, i)
         pygame.time.delay(50)
         pygame.display.update()
     return height
@@ -140,13 +152,23 @@ while run:
             run = False
 
         if event.type == pygame.MOUSEBUTTONDOWN:
+
+            if homeButton.collidepoint(event.pos):
+                scene = "menu"
+
+            elif compareButton.collidepoint(event.pos):
+                scene = "compare"
+
             if scene == "menu":
                 if bubbleButton.collidepoint(event.pos):
                     scene = "bubble"
+                    height = []
                 elif insertionButton.collidepoint(event.pos):
                     scene = "insertion"
+                    height = []
                 elif mergeButton.collidepoint(event.pos):
                     scene = "merge"
+                    height = []
             if scene == "bubble" or scene == "insertion" or scene == "merge":
                 if input_rect.collidepoint(event.pos):
                     user_input = True
@@ -157,9 +179,12 @@ while run:
             elif event.key == pygame.K_RETURN:
                 if int(user_choice) < 5 or int(user_choice) > 30:
                     invalidInput = True 
+                    sorted_done = False
                 else:
                     invalidInput = False
+                    sorted_done = False
                     height = create_array(int(user_choice))
+                    user_choice = ""
             else:
                 if event.unicode.isdigit():
                     user_choice += event.unicode
@@ -168,31 +193,41 @@ while run:
 
 
     if scene == "menu":
-        bubbleButton, insertionButton, mergeButton = homepage.HomeScreen()
+        bubbleButton, insertionButton, mergeButton, homeButton, compareButton = homepage.HomeScreen()
     
     if scene == "merge" or scene == "insertion" or scene == "bubble":
+        homeButton, compareButton = homepage.StandardScreen()
         if keys[pygame.K_SPACE]:
             execute = True        
         if execute == False:
-            screen.fill((137, 207, 240))
+            
+            
             input_rect = sort_page(scene)
             if invalidInput:
                 invalid_input()
-                
             
-            show(height)
+            if sorted_done:
+                show(height, sorted_done)
+            else:
+                show(height, False)
+                
             
 
         else:
             if scene == "merge":
                 height = merge_sort(height)
-                execute = False
             elif scene == "bubble":
                 height = bubble_sort(height)
-                execute = False
             elif scene == "insertion":
                 height = insertion_sort(height)
-                execute = False
+         
+            execute = False
+            sorted_done = True
+            
+            show(height, sorted_done)
+
+    if scene == "compare":
+        homeButton, compareButton = homepage.StandardScreen()
 
     pygame.display.update()
 

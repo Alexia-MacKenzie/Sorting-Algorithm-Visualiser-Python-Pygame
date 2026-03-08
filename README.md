@@ -1,8 +1,9 @@
 # Sorting-Algorithm-Visualiser-Python-Pygame
 
-Project Name
+Sorting Algorithm Visualiser
 
 Overview
+This pygame program visually represents how bubble, insertion and merge sorts each sort data out in ascending order.
 
 
 Motivation

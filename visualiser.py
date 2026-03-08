@@ -1,6 +1,7 @@
 import pygame
 import random
 import homepage
+import time
 pygame.init() # initialises pygame modules which are imported
 pygame.font.init()
 
@@ -24,6 +25,7 @@ height = []
 input_rect = pygame.Rect(1100, 100, 140, 32)
 invalidInput = False
 sorted_done = False
+merge_logic_time = 0 
 
 
 
@@ -36,7 +38,7 @@ def create_array(num):
     return height
 
 
-def show(height, sorted_done, sorted_index= None, reverse = False):
+def show(height, sorted_done, sorted_index= None, reverse = False, active_range=None):
     if sorted_index == None:
         if reverse:
             sorted_index = len(height)
@@ -46,6 +48,8 @@ def show(height, sorted_done, sorted_index= None, reverse = False):
     for i in range(len(height)):
         if sorted_done:
             colour = "green"
+        elif active_range and active_range[0] <= i <= active_range[1]:
+            colour = "yellow"
         else: 
             if reverse:
                 colour = "green" if i >= sorted_index else "red"
@@ -80,67 +84,116 @@ def invalid_input():
     screen.blit(text, textRect)
 
 def bubble_sort(height):
+    total_logic_time = 0
     n = len(height)
     for i in range(n - 1):
         for j in range(len(height) - i - 1):
             if height[j] > height[j + 1]:
+                bubble_time = time.perf_counter()
                 temp = height[j]
                 height[j] = height[j + 1]
                 height[j + 1] = temp
+                total_logic_time += (time.perf_counter() - bubble_time)
                 screen.fill((137, 207, 240))
                 show(height, False, n-i, True)
                 pygame.time.delay(50)
                 pygame.display.update()
-    return height
+    bubble_results = {"Number of items" : n, "Time taken" : total_logic_time}
+
+    return height, bubble_results
 
 def insertion_sort(height):
+    total_logic_time = 0
     n = len(height)
     for i in range(1,n):
+        insertion_time = time.perf_counter()
         key = height[i]
         j = i - 1
         while j >= 0 and key < height[j]:
             height[j + 1] = height[j]
             j -= 1
         height[j + 1] = key
+        total_logic_time += (time.perf_counter() - insertion_time)
         screen.fill((137, 207, 240))
         show(height, False, i)
         pygame.time.delay(50)
         pygame.display.update()
-    return height
+    insertion_results = {"Number of items" : n, "Time taken" : total_logic_time}
+    return height, insertion_results
 
-def merge_sort(height):
+def merge_sort(height, index=0):
+    global merge_logic_time
+    start_time = time.perf_counter()
     if len(height) <= 1:
         return height
     mid = len(height) // 2
     left = height[:mid]
     right = height[mid:]
+    merge_logic_time += (time.perf_counter() - start_time)
 
-    sorted_left = merge_sort(left)
-    sorted_right = merge_sort(right)
+    sorted_left = merge_sort(left, index)
+    sorted_right = merge_sort(right, index + mid)
 
-    return merge(sorted_left, sorted_right)
+    return merge(sorted_left, sorted_right, index)
 
 
-def merge(left, right):
+def merge(left, right, offset):
+    global merge_logic_time
     result = []
     i = j = 0
+    active_range = (offset, offset + len(left) + len(right) - 1)
 
     while i < len(left) and j < len(right):
+        start_time = time.perf_counter()
+
         if left[i] < right[j]:
             result.append(left[i])
+            height[offset + len(result) - 1] = left[i]
             i += 1
         else:
-            result. append(right[j])
+            result.append(right[j])
+            height[offset + len(result) - 1] = right[j]
             j += 1
+        merge_logic_time += (time.perf_counter() - start_time)
+
         screen.fill((137, 207, 240))
-        show(result)
+        show(height, False, active_range=active_range)
         pygame.time.delay(50)
         pygame.display.update()
-    
-    result.extend(left[i:])
-    result.extend(right[j:])
+    while i < len(left):
+            result.append(left[i])
+            height[offset + len(result) - 1] = left[i]
+            i += 1
+            screen.fill((137, 207, 240))
+            show(height, False, active_range=active_range)
+            pygame.display.update()
+            pygame.time.delay(50)
+
+    while j < len(right):
+        result.append(right[j])
+        height[offset + len(result) - 1] = right[j]
+        j += 1
+        screen.fill((137, 207, 240))
+        show(height, False, active_range=active_range)
+        pygame.display.update()
+        pygame.time.delay(50)
 
     return result
+
+def run_merge_sort(height):
+    global merge_logic_time
+    merge_logic_time = 0  
+    
+    n = len(height)
+    
+    sorted_height = merge_sort(height, 0) 
+    
+    merge_results = {
+        "Number of items": n, 
+        "Time taken": merge_logic_time
+    }
+    
+    return sorted_height, merge_results
 
 
 while run:
@@ -215,11 +268,11 @@ while run:
 
         else:
             if scene == "merge":
-                height = merge_sort(height)
+                height, merge_results = run_merge_sort(height)
             elif scene == "bubble":
-                height = bubble_sort(height)
+                height, bubble_results = bubble_sort(height)
             elif scene == "insertion":
-                height = insertion_sort(height)
+                height, insertion_results = insertion_sort(height)
          
             execute = False
             sorted_done = True
@@ -228,6 +281,8 @@ while run:
 
     if scene == "compare":
         homeButton, compareButton = homepage.StandardScreen()
+
+
 
     pygame.display.update()
 

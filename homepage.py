@@ -45,3 +45,17 @@ def HomeScreen():
     mergeButton = drawButton("Merge", 450, 380,390, 70)
     return bubbleButton, insertionButton, mergeButton, homeButton, compareButton
 
+def comparePage():
+    pygame.draw.rect(screen, "white", pygame.Rect(100, 250, 300, 300))
+    pygame.draw.rect(screen, "white", pygame.Rect(500, 250, 300, 300))
+    bubble_text = Buttonfont.render("BUBBLE SORT", True, "black") 
+    insertion_text = Buttonfont.render("INSERTION SORT", True, "black") 
+    bubble_text_rect = bubble_text.get_rect()
+    bubble_text_rect.center = (120, 230)
+    screen.blit(bubble_text, bubble_text_rect)
+    insertion_text_rect = insertion_text.get_rect()
+    insertion_text_rect.center = (520, 230)
+    screen.blit(insertion_text, insertion_text_rect)
+
+     
+

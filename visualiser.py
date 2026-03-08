@@ -26,15 +26,25 @@ input_rect = pygame.Rect(1100, 100, 140, 32)
 invalidInput = False
 sorted_done = False
 merge_logic_time = 0 
-
+b_gen = i_gen = None
+h_bubble = h_insert = []
+b_done = i_done = False
+bubble_stats = {"comparisons" : 0, "swaps" : 0}
+insertion_stats = {"comparisons": 0, "swaps" : 0}
+run = True
+execute = False
 
 
 run = True
 
-def create_array(num):
+def create_array(num, scene):
     height = []
-    for i in range(num):
-        height.append(random.randint(100,600))
+    if scene == "compare":
+        for i in range(num):
+            height.append(random.randint(20,100))
+    else:
+        for i in range(num):
+            height.append(random.randint(100,600))
     return height
 
 
@@ -57,25 +67,44 @@ def show(height, sorted_done, sorted_index= None, reverse = False, active_range=
                 colour = "green" if i < sorted_index else "red"
         pygame.draw.rect(screen, colour, (x + 30 * i, y + 40, width, height[i]))
 
+def compare_show(heights, box_idx, individual_done=False):
+    n = len(heights)
+    if n <= 0:
+        return
+    box_x_starts = [100, 500, 900]
+    base_x = box_x_starts[box_idx]
+    base_y = 500  
+    
 
-def sort_page(sort_type):
-     text = TitleFont.render(f"{sort_type.upper()} SORT", True, "black") 
-     textRect = text.get_rect()
-     textRect.center = (1100, 100)
-     screen.blit(text, textRect)
-     input_rect = pygame.Rect(1100, 150, 140, 32)
-     int_text1 = Buttonfont.render("Enter and integer between 5 and 30", True, "black")
-     int_text_rect1 = int_text1.get_rect()
-     int_text_rect1.center = (1100, 130)
-     screen.blit(int_text1, int_text_rect1)
-     int_text2 = Buttonfont.render("for the number of items you want to sort", True, "black")
-     int_text_rect2 = int_text2.get_rect()
-     int_text_rect2.center = (1100, 140)
-     screen.blit(int_text2, int_text_rect2)
-     pygame.draw.rect(screen, "white", input_rect)
-     text_surface = Buttonfont.render(user_choice, True, "black")
-     screen.blit(text_surface, (input_rect.x + 5, input_rect.y + 5))
-     return input_rect
+    bar_width = (280 // n)
+    
+    for i in range(n):
+        colour = "green" if individual_done else "red"
+        pygame.draw.rect(screen, colour, (base_x + 10 + (i * bar_width), base_y - heights[i], bar_width - 2, heights[i]))
+
+
+def sort_page(sort_type="None"):
+    if sort_type == "None":
+        text = TitleFont.render(f"Comparison Page", True, "black")
+        int_text1 = Buttonfont.render("Enter and integer between 5 and 10", True, "black")
+    else:
+        text = TitleFont.render(f"{sort_type.upper()} SORT", True, "black") 
+        int_text1 = Buttonfont.render("Enter and integer between 5 and 30", True, "black")
+    textRect = text.get_rect()
+    textRect.center = (1100, 100)
+    screen.blit(text, textRect)
+    input_rect = pygame.Rect(1100, 150, 140, 32)
+    int_text_rect1 = int_text1.get_rect()
+    int_text_rect1.center = (1100, 130)
+    screen.blit(int_text1, int_text_rect1)
+    int_text2 = Buttonfont.render("for the number of items you want to sort", True, "black")
+    int_text_rect2 = int_text2.get_rect()
+    int_text_rect2.center = (1100, 140)
+    screen.blit(int_text2, int_text_rect2)
+    pygame.draw.rect(screen, "white", input_rect)
+    text_surface = Buttonfont.render(user_choice, True, "black")
+    screen.blit(text_surface, (input_rect.x + 5, input_rect.y + 5))
+    return input_rect
 
 def invalid_input():
     text = Buttonfont.render("Invalid Input. Try Again", True, "black")
@@ -196,8 +225,47 @@ def run_merge_sort(height):
     return sorted_height, merge_results
 
 
+def bubble_sort_comp(height):
+    n = len(height)
+    comparisons = 0
+    swaps = 0
+    for i in range(n - 1):
+        for j in range(n - i - 1):
+            comparisons += 1
+            yield {"done": False, "comparisons" : comparisons, "swaps" : swaps} 
+            if height[j] > height[j + 1]:
+                temp = height[j]
+                height[j] = height[j + 1]
+                height[j + 1] = temp
+                swaps += 1     
+    yield {"done": True, "comparisons" : comparisons, "swaps" : swaps}  
+
+def insertion_sort_comp(height):
+    comparisons = 0
+    swaps = 0
+    for i in range(1, len(height)):
+        key = height[i]
+        j = i - 1
+        while j >= 0 and key < height[j]:
+            comparisons += 1
+            height[j + 1] = height[j]
+            j -= 1
+            yield {"done": False, "comparisons" : comparisons, "swaps" : swaps} 
+        height[j + 1] = key
+        swaps += 1
+        yield {"done": False, "comparisons" : comparisons, "swaps" : swaps} 
+    yield {"done": True, "comparisons" : comparisons, "swaps" : swaps} 
+
+
+def display_stats(bubble, insertion):
+    b_text = Buttonfont.render(f"Comps: {bubble['comparisons']} | Swaps: {bubble['swaps']}", True, "black")
+    screen.blit(b_text, (100, 520))
+    
+    
+    i_text = Buttonfont.render(f"Comps: {insertion['comparisons']} | Swaps: {insertion['swaps']}", True, "black")
+    screen.blit(i_text, (500, 520))
+
 while run:
-    execute = False
     pygame.time.delay(10)
     keys = pygame.key.get_pressed()
     for event in pygame.event.get():
@@ -211,6 +279,7 @@ while run:
 
             elif compareButton.collidepoint(event.pos):
                 scene = "compare"
+                height = []
 
             if scene == "menu":
                 if bubbleButton.collidepoint(event.pos):
@@ -222,22 +291,37 @@ while run:
                 elif mergeButton.collidepoint(event.pos):
                     scene = "merge"
                     height = []
-            if scene == "bubble" or scene == "insertion" or scene == "merge":
+            if scene == "bubble" or scene == "insertion" or scene == "merge" or scene == "compare":
                 if input_rect.collidepoint(event.pos):
                     user_input = True
 
-        if user_input and event.type == pygame.KEYDOWN:   
+        if user_input and event.type == pygame.KEYDOWN:  
+            invalidInput = False 
             if user_input and event.key == pygame.K_BACKSPACE:
                 user_choice = user_choice[:-1]
+            elif event.key == pygame.K_SPACE:
+                if scene == "compare" and height:
+                    execute = True
             elif event.key == pygame.K_RETURN:
-                if int(user_choice) < 5 or int(user_choice) > 30:
-                    invalidInput = True 
-                    sorted_done = False
+                if scene == "compare":
+                    if int(user_choice) < 5 or int(user_choice) > 10:
+                        invalidInput = True 
+                        sorted_done = False
                 else:
+                    if int(user_choice) < 5 or int(user_choice) > 30:
+                        invalidInput = True 
+                        sorted_done = False
+                
+                if not invalidInput:
                     invalidInput = False
                     sorted_done = False
-                    height = create_array(int(user_choice))
+                    height = create_array(int(user_choice), scene)
                     user_choice = ""
+                    if scene == "compare":
+                        b_gen = i_gen = None
+                        execute = True
+                    else:
+                        sorted_done = False
             else:
                 if event.unicode.isdigit():
                     user_choice += event.unicode
@@ -281,6 +365,66 @@ while run:
 
     if scene == "compare":
         homeButton, compareButton = homepage.StandardScreen()
+        input_rect = sort_page()
+        homepage.comparePage()
+
+        if height and b_gen is None and execute:
+            h_bubble = list(height)
+            h_insert = list(height)
+            b_gen = bubble_sort_comp(h_bubble)
+            i_gen = insertion_sort_comp(h_insert)
+            b_done = i_done = False
+            
+
+
+
+        if execute:
+            pygame.time.delay(50)
+            if not b_done:
+                try: 
+                    status = next(b_gen)
+                    bubble_stats["comparisons"], bubble_stats["swaps"] = status["comparisons"], status["swaps"]
+                    if status["done"] == True:
+                        b_done = True
+                except (StopIteration, TypeError): 
+                    b_done = True
+            
+        
+            if not i_done:
+                try: 
+                    status = next(i_gen)
+                    insertion_stats["comparisons"], insertion_stats["swaps"] = status["comparisons"], status["swaps"]
+                    if status["done"] == True:
+                        i_done = True
+                except (StopIteration, TypeError):
+                    i_done = True
+            
+            if b_done and i_done:
+                execute = False
+                sorted_done = True
+
+        if b_gen is not None:
+            compare_show(h_bubble, 0, b_done or sorted_done)
+            compare_show(h_insert, 1, i_done or sorted_done)
+
+            if b_done and not i_done:
+                winner_text = Buttonfont.render("Bubble Wins!", True, "Green")
+                screen.blit(winner_text, (150, 250))
+            elif i_done and not b_done:
+                winner_text = Buttonfont.render("Insertion Wins!", True, "Green")
+                screen.blit(winner_text, (550, 250))
+        elif sorted_done:
+            compare_show(h_bubble, 0, True)
+            compare_show(h_insert, 1, True)
+        
+
+        
+        else:
+            if invalidInput:
+                invalid_input()
+        display_stats(bubble_stats, insertion_stats)
+
+
 
 
 

@@ -1,13 +1,13 @@
 import pygame
 import random
 import homepage
-import time
-pygame.init() # initialises pygame modules which are imported
+pygame.init()
 pygame.font.init()
 
 screen = pygame.display.set_mode((1250, 680))
 scene = "menu"
 background_colour = (137, 207, 240)
+current_action = ""
 
 
 
@@ -16,6 +16,7 @@ pygame.display.set_caption("Sorting Visualiser")
 x = 40
 y = 40
 TitleFont = pygame.font.SysFont("Optima", 50)
+CompareFont = pygame.font.SysFont("Optima", 35)
 Buttonfont = pygame.font.SysFont("Optima", 20)
 
 width = 20
@@ -23,9 +24,10 @@ user_choice = ''
 user_input = False
 height = [] 
 input_rect = pygame.Rect(1100, 100, 140, 32)
+plus_rect = pygame.Rect(0, 0, 0, 0)
+minus_rect = pygame.Rect(0, 0, 0, 0)
 invalidInput = False
-sorted_done = False
-merge_logic_time = 0 
+sorted_done = False 
 b_gen = i_gen = None
 h_bubble = h_insert = []
 b_done = i_done = False
@@ -33,6 +35,7 @@ bubble_stats = {"comparisons" : 0, "swaps" : 0}
 insertion_stats = {"comparisons": 0, "swaps" : 0}
 run = True
 execute = False
+sort_delay = 50
 
 
 run = True
@@ -49,6 +52,10 @@ def create_array(num, scene):
 
 
 def show(height, sorted_done, sorted_index= None, reverse = False, active_range=None):
+    global current_action
+    action_surf = CompareFont.render(current_action, True, (0, 0, 0))
+    screen.blit(action_surf, (950, 500))
+
     if sorted_index == None:
         if reverse:
             sorted_index = len(height)
@@ -83,6 +90,26 @@ def compare_show(heights, box_idx, individual_done=False):
         pygame.draw.rect(screen, colour, (base_x + 10 + (i * bar_width), base_y - heights[i], bar_width - 2, heights[i]))
 
 
+def draw_speed_controls():
+    
+    plus_rect = pygame.Rect(1100, 400, 30, 30)
+    minus_rect = pygame.Rect(1150, 400, 30, 30)
+    
+    
+    pygame.draw.rect(screen, (200, 200, 200), plus_rect)
+    pygame.draw.rect(screen, (200, 200, 200), minus_rect)
+    
+    
+    plus_text = Buttonfont.render("+", True, "black")
+    minus_text = Buttonfont.render("-", True, "black")
+    speed_label = Buttonfont.render(f"Delay: {sort_delay}ms", True, "black")
+    
+    screen.blit(plus_text, (plus_rect.x + 10, plus_rect.y + 5))
+    screen.blit(minus_text, (minus_rect.x + 12, minus_rect.y + 5))
+    screen.blit(speed_label, (1100, 370))
+    
+    return plus_rect, minus_rect
+
 def sort_page(sort_type="None"):
     if sort_type == "None":
         text = TitleFont.render(f"Comparison Page", True, "black")
@@ -104,7 +131,22 @@ def sort_page(sort_type="None"):
     pygame.draw.rect(screen, "white", input_rect)
     text_surface = Buttonfont.render(user_choice, True, "black")
     screen.blit(text_surface, (input_rect.x + 5, input_rect.y + 5))
-    return input_rect
+    instruction_text1 = Buttonfont.render("Press the white square to enter your value", True, "black")
+    instruction_rect1 = instruction_text1.get_rect()
+    instruction_rect1.center = (1100, 200)
+    screen.blit(instruction_text1, instruction_rect1)
+    instruction_text2 = Buttonfont.render("Press the enter key to submit your value", True, "black")
+    instruction_rect2 = instruction_text2.get_rect()
+    instruction_rect2.center = (1100, 250)
+    screen.blit(instruction_text2, instruction_rect2)
+    instruction_text3 = Buttonfont.render("Press the space button to start the sort", True, "black")
+    instruction_rect3 = instruction_text3.get_rect()
+    instruction_rect3.center = (1100, 300)
+    screen.blit(instruction_text3, instruction_rect3)
+    plus_rect, minus_rect = draw_speed_controls() 
+    return input_rect, plus_rect, minus_rect
+
+
 
 def invalid_input():
     text = Buttonfont.render("Invalid Input. Try Again", True, "black")
@@ -112,117 +154,105 @@ def invalid_input():
     textRect.center = (1100, 200)
     screen.blit(text, textRect)
 
+
+
 def bubble_sort(height):
-    total_logic_time = 0
+    global current_action
     n = len(height)
     for i in range(n - 1):
         for j in range(len(height) - i - 1):
+            current_action = f"Comparing {height[j]} and {height[j+1]}"
             if height[j] > height[j + 1]:
-                bubble_time = time.perf_counter()
                 temp = height[j]
                 height[j] = height[j + 1]
                 height[j + 1] = temp
-                total_logic_time += (time.perf_counter() - bubble_time)
                 screen.fill((137, 207, 240))
                 show(height, False, n-i, True)
-                pygame.time.delay(50)
+                pygame.time.delay(sort_delay)
                 pygame.display.update()
-    bubble_results = {"Number of items" : n, "Time taken" : total_logic_time}
 
-    return height, bubble_results
+    return height
 
 def insertion_sort(height):
-    total_logic_time = 0
+    global current_action
     n = len(height)
     for i in range(1,n):
-        insertion_time = time.perf_counter()
         key = height[i]
         j = i - 1
         while j >= 0 and key < height[j]:
+            current_action = f"Comparing {height[j]} and {height[j+1]}"
             height[j + 1] = height[j]
             j -= 1
         height[j + 1] = key
-        total_logic_time += (time.perf_counter() - insertion_time)
         screen.fill((137, 207, 240))
         show(height, False, i)
-        pygame.time.delay(50)
+        pygame.time.delay(sort_delay)
         pygame.display.update()
-    insertion_results = {"Number of items" : n, "Time taken" : total_logic_time}
-    return height, insertion_results
+    return height
 
-def merge_sort(height, index=0):
-    global merge_logic_time
-    start_time = time.perf_counter()
-    if len(height) <= 1:
-        return height
-    mid = len(height) // 2
-    left = height[:mid]
-    right = height[mid:]
-    merge_logic_time += (time.perf_counter() - start_time)
+def merge_sort(current_chunk, index, original_list):
+    if len(current_chunk) <= 1:
+        return current_chunk
+    mid = len(current_chunk) // 2
+    left = current_chunk[:mid]
+    right = current_chunk[mid:]
 
-    sorted_left = merge_sort(left, index)
-    sorted_right = merge_sort(right, index + mid)
+    sorted_left = merge_sort(left, index, original_list)
+    sorted_right = merge_sort(right, index + mid, original_list)
 
-    return merge(sorted_left, sorted_right, index)
+    return merge(sorted_left, sorted_right, index, original_list)
 
 
-def merge(left, right, offset):
-    global merge_logic_time
+def merge(left, right, offset, original_list):
+    global current_action
     result = []
     i = j = 0
     active_range = (offset, offset + len(left) + len(right) - 1)
 
     while i < len(left) and j < len(right):
-        start_time = time.perf_counter()
-
+        current_action = f"Merging {left[i]} and {right[j]}"
         if left[i] < right[j]:
             result.append(left[i])
-            height[offset + len(result) - 1] = left[i]
             i += 1
         else:
             result.append(right[j])
-            height[offset + len(result) - 1] = right[j]
             j += 1
-        merge_logic_time += (time.perf_counter() - start_time)
 
-        screen.fill((137, 207, 240))
-        show(height, False, active_range=active_range)
-        pygame.time.delay(50)
+        # CRITICAL FIX: Update the actual original list at the correct offset
+        original_list[offset + len(result) - 1] = result[-1]
+
+        screen.fill(background_colour)
+        show(original_list, False, active_range=active_range)
+        pygame.time.delay(sort_delay)
         pygame.display.update()
+
+    # Handle remaining elements
     while i < len(left):
-            result.append(left[i])
-            height[offset + len(result) - 1] = left[i]
-            i += 1
-            screen.fill((137, 207, 240))
-            show(height, False, active_range=active_range)
-            pygame.display.update()
-            pygame.time.delay(50)
+        current_action = f"Placing remaining {left[i]}"
+        result.append(left[i])
+        original_list[offset + len(result) - 1] = left[i]
+        i += 1
+        screen.fill(background_colour)
+        show(original_list, False, active_range=active_range)
+        pygame.display.update()
+        pygame.time.delay(sort_delay)
 
     while j < len(right):
         result.append(right[j])
-        height[offset + len(result) - 1] = right[j]
+        original_list[offset + len(result) - 1] = right[j]
         j += 1
-        screen.fill((137, 207, 240))
-        show(height, False, active_range=active_range)
+        screen.fill(background_colour)
+        show(original_list, False, active_range=active_range)
         pygame.display.update()
-        pygame.time.delay(50)
+        pygame.time.delay(sort_delay)
 
     return result
 
-def run_merge_sort(height):
-    global merge_logic_time
-    merge_logic_time = 0  
+def run_merge_sort(arr):
+    n = len(arr)
+    sorted_height = merge_sort(arr, 0, arr) 
     
-    n = len(height)
-    
-    sorted_height = merge_sort(height, 0) 
-    
-    merge_results = {
-        "Number of items": n, 
-        "Time taken": merge_logic_time
-    }
-    
-    return sorted_height, merge_results
+    return sorted_height
 
 
 def bubble_sort_comp(height):
@@ -294,6 +324,11 @@ while run:
             if scene == "bubble" or scene == "insertion" or scene == "merge" or scene == "compare":
                 if input_rect.collidepoint(event.pos):
                     user_input = True
+    
+                if plus_rect.collidepoint(event.pos):
+                    sort_delay = max(1, sort_delay - 10) 
+                elif minus_rect.collidepoint(event.pos):
+                    sort_delay = min(500, sort_delay + 10) 
 
         if user_input and event.type == pygame.KEYDOWN:  
             invalidInput = False 
@@ -336,14 +371,13 @@ while run:
         homeButton, compareButton = homepage.StandardScreen()
         if keys[pygame.K_SPACE]:
             execute = True        
-        if execute == False:
-            
-            
-            input_rect = sort_page(scene)
+        if execute == False:  
+            input_rect, plus_rect, minus_rect = sort_page(scene)
             if invalidInput:
                 invalid_input()
             
             if sorted_done:
+                current_action = "Sorting Completed"
                 show(height, sorted_done)
             else:
                 show(height, False)
@@ -352,20 +386,21 @@ while run:
 
         else:
             if scene == "merge":
-                height, merge_results = run_merge_sort(height)
+                height = run_merge_sort(height)
             elif scene == "bubble":
-                height, bubble_results = bubble_sort(height)
+                height = bubble_sort(height)
             elif scene == "insertion":
-                height, insertion_results = insertion_sort(height)
+                height = insertion_sort(height)
          
             execute = False
             sorted_done = True
             
             show(height, sorted_done)
 
+
     if scene == "compare":
         homeButton, compareButton = homepage.StandardScreen()
-        input_rect = sort_page()
+        input_rect, plus_rect, minus_rect = sort_page()
         homepage.comparePage()
 
         if height and b_gen is None and execute:
@@ -379,7 +414,7 @@ while run:
 
 
         if execute:
-            pygame.time.delay(50)
+            pygame.time.delay(sort_delay)
             if not b_done:
                 try: 
                     status = next(b_gen)

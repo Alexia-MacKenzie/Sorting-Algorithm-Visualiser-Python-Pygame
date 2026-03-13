@@ -113,10 +113,10 @@ def draw_speed_controls():
 def sort_page(sort_type="None"):
     if sort_type == "None":
         text = TitleFont.render(f"Comparison Page", True, "black")
-        int_text1 = Buttonfont.render("Enter and integer between 5 and 10", True, "black")
+        int_text1 = Buttonfont.render("Enter an integer between 5 and 10", True, "black")
     else:
         text = TitleFont.render(f"{sort_type.upper()} SORT", True, "black") 
-        int_text1 = Buttonfont.render("Enter and integer between 5 and 30", True, "black")
+        int_text1 = Buttonfont.render("Enter an integer between 5 and 30", True, "black")
     textRect = text.get_rect()
     textRect.center = (1100, 100)
     screen.blit(text, textRect)
